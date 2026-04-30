@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
 
@@ -153,6 +154,9 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
     final pricePerWh = loc['pricePerWh'] ?? 0.17;
     final minimumCharge = loc['minimumCharge'] ?? 150;
     final pricePerKwh = pricePerWh * 1000;
+    final latitude = loc['latitude'];
+    final longitude = loc['longitude'];
+    final hasCoords = latitude != null && longitude != null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -273,8 +277,34 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          if (hasCoords)
+            IconButton(
+              icon: const Icon(Icons.near_me_rounded),
+              color: AppColors.primary,
+              onPressed: () => _openGoogleMaps(latitude, longitude, location),
+              tooltip: 'Navigate',
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _openGoogleMaps(double lat, double lng, String name) async {
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&destination_place_id=$name';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open Google Maps'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }
