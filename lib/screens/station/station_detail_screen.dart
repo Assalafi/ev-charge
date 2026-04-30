@@ -325,11 +325,11 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                           ),
                         ),
                       ),
-                      if (s['latitude'] != null && s['longitude'] != null)
+                      if (s['latitude'] is num && s['longitude'] is num)
                         InkWell(
                           onTap: () => _openGoogleMaps(
-                            s['latitude'],
-                            s['longitude'],
+                            (s['latitude'] as num).toDouble(),
+                            (s['longitude'] as num).toDouble(),
                             s['name'] ?? widget.chargePointId,
                           ),
                           child: Container(
@@ -854,15 +854,19 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   }
 
   Future<void> _openGoogleMaps(double lat, double lng, String name) async {
-    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&destination_place_id=$name';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    final googleMapsUrl = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+    final webUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    try {
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not open Google Maps'),
+            content: Text('Could not open Google Maps: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
