@@ -304,6 +304,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       controller.text = amount.toString();
                     },
                     backgroundColor: AppColors.primaryLight,
+                    labelStyle: GoogleFonts.inter(color: Colors.white),
                   );
                 }).toList(),
               ),

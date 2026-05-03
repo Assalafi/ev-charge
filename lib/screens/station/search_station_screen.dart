@@ -186,7 +186,7 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
             ),
             child: Icon(
               Icons.location_on_rounded,
-              color: hasReady ? AppColors.primary : AppColors.offline,
+              color: hasReady ? AppColors.accent : AppColors.offline,
               size: 26,
             ),
           ),

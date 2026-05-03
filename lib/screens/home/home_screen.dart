@@ -173,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -386,8 +386,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             title: 'Scan\nQR Code',
                             subtitle: 'Quick start',
                             gradient: const [
-                              Color(0xFF00C853),
-                              Color(0xFF009624)
+                              Color(0xFF3DD68C),
+                              Color(0xFF2DB376)
                             ],
                             onTap: () {
                               Navigator.push(
@@ -406,8 +406,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             title: 'Find\nLocation',
                             subtitle: 'Station locations',
                             gradient: const [
-                              Color(0xFF1A1A2E),
-                              Color(0xFF16213E)
+                              Color(0xFF1B2150),
+                              Color(0xFF121838)
                             ],
                             onTap: () {
                               Navigator.push(

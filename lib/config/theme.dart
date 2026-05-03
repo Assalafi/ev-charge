@@ -2,31 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF00C853);
-  static const Color primaryDark = Color(0xFF009624);
-  static const Color primaryLight = Color(0xFFE8F5E9);
-  static const Color accent = Color(0xFF00E676);
-  static const Color error = Color(0xFFEF4444);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color charging = Color(0xFF00C853);
-  static const Color available = Color(0xFF10B981);
+  static const Color primary = Color(0xFF1B2150);
+  static const Color primaryDark = Color(0xFF121838);
+  static const Color primaryLight = Color(0xFF2E3566);
+  static const Color accent = Color(0xFF3DD68C);
+  static const Color error = Color(0xFFE5534B);
+  static const Color success = Color(0xFF3DD68C);
+  static const Color warning = Color(0xFFF5A623);
+  static const Color charging = Color(0xFF3DD68C);
+  static const Color available = Color(0xFF3DD68C);
   static const Color offline = Color(0xFF9CA3AF);
-  static const Color faulted = Color(0xFFEF4444);
+  static const Color faulted = Color(0xFFE5534B);
 
   // Light theme colors
-  static const Color background = Color(0xFFF5F7FA);
+  static const Color background = Color(0xFFF4F6FA);
   static const Color surface = Colors.white;
   static const Color text = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textSecondary = Color(0xFF6B7394);
   static const Color border = Color(0xFFE5E7EB);
 
   // Dark theme colors
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color surfaceDark = Color(0xFF1E1E1E);
-  static const Color cardDark = Color(0xFF2A2A2A);
-  static const Color textDark = Color(0xFFE0E0E0);
-  static const Color textSecondaryDark = Color(0xFF9CA3AF);
+  static const Color backgroundDark = Color(0xFF121838);
+  static const Color surfaceDark = Color(0xFF1B2150);
+  static const Color cardDark = Color(0xFF2E3566);
+  static const Color textDark = Color(0xFFFFFFFF);
+  static const Color textSecondaryDark = Color(0xFFB8B8C0);
   static const Color borderDark = Color(0xFF3A3A3A);
 }
 

@@ -268,11 +268,11 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
               ),
               child: Column(
                 children: [
-                  Text('Amount Charged', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary)),
+                  Text('Amount Charged', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
                   const SizedBox(height: 4),
                   Text(
                     CurrencyFormatter.format(amount),
-                    style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.primary),
+                    style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
                   ),
                 ],
               ),

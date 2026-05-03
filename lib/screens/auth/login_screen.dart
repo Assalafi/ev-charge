@@ -331,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Icon(
                               Icons.fingerprint_rounded,
                               size: 36,
-                              color: AppColors.primary,
+                              color: Colors.white,
                             ),
                           ),
                         ),
