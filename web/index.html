@@ -22,23 +22,27 @@
   <meta name="keywords" content="EV charging, electric vehicle, charging stations, Nigeria, African Motor Works, e-ride, EV Charge, electric car charging">
   <meta name="author" content="African Motor Works">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://evcharge.eride.ng">
+  <link rel="canonical" href="https://evcharge.evworld.ng">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://evcharge.eride.ng">
+  <meta property="og:url" content="https://evcharge.evworld.ng">
   <meta property="og:title" content="EV Charge - Smart EV Charging App">
   <meta property="og:description" content="Find and manage EV charging stations across Nigeria. Track your energy usage, payments, and charging history with the official EV Charge app by African Motor Works.">
-  <meta property="og:image" content="https://evcharge.eride.ng/icons/Icon-512.png">
+  <meta property="og:image" content="https://evcharge.evworld.ng/icons/Icon-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="EV Charge Logo">
   <meta property="og:site_name" content="EV Charge">
   <meta property="og:locale" content="en_NG">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://evcharge.eride.ng">
+  <meta name="twitter:url" content="https://evcharge.evworld.ng">
   <meta name="twitter:title" content="EV Charge - Smart EV Charging App">
   <meta name="twitter:description" content="Find and manage EV charging stations across Nigeria. Track your energy usage, payments, and charging history.">
-  <meta name="twitter:image" content="https://evcharge.eride.ng/icons/Icon-512.png">
+  <meta name="twitter:image" content="https://evcharge.evworld.ng/icons/Icon-512.png">
+  <meta name="twitter:image:alt" content="EV Charge Logo">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,6 +56,48 @@
   <title>EV Charge</title>
   <link rel="manifest" href="manifest.json">
 
+  <style>
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loading-logo {
+      width: 120px;
+      height: 120px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .loading-text {
+      margin-top: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
@@ -60,6 +106,11 @@
   <script src="flutter.js" defer></script>
 </head>
 <body>
+  <div id="loading">
+    <img src="logo.png" alt="EV Charge" class="loading-logo" onerror="this.style.display='none'">
+    <div class="loading-text">EV Charge</div>
+  </div>
+
   <script>
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
@@ -70,6 +121,16 @@
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine().then(function(appRunner) {
             appRunner.runApp();
+            // Hide loading screen when Flutter app is ready
+            setTimeout(function() {
+              var loading = document.getElementById('loading');
+              if (loading) {
+                loading.classList.add('hidden');
+                setTimeout(function() {
+                  loading.remove();
+                }, 500);
+              }
+            }, 500);
           });
         }
       });
