@@ -522,7 +522,9 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
     final connStatus = _session?['connectorStatus'] ?? 'Charging';
     final soc = (_session?['soc'] ?? 0).toInt(); // State of Charge in percentage
 
-    return SingleChildScrollView(
+    return Stack(
+      children: [
+        SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
@@ -584,7 +586,7 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: const Color.fromARGB(255, 255, 255, 255),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -633,7 +635,7 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
           Row(
             children: [
               _statCard(
-                Icons.monetization_on_outlined,
+                '₦',
                 'Cost',
                 CurrencyFormatter.format(amount),
               ),
@@ -763,6 +765,64 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
           const SizedBox(height: 24),
         ],
       ),
+    ),
+
+        // Stopping overlay
+        if (_stopping)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: CircularProgressIndicator(
+                        color: AppColors.error,
+                        strokeWidth: 5,
+                        backgroundColor: AppColors.error.withOpacity(0.15),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Stopping Session...',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait while we safely\nstop your charging session',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -847,7 +907,7 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
     );
   }
 
-  Widget _statCard(IconData icon, String label, String value) {
+  Widget _statCard(dynamic icon, String label, String value) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(18),
@@ -859,7 +919,16 @@ class _ChargingSessionScreenState extends State<ChargingSessionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.primary, size: 22),
+            icon is IconData
+                ? Icon(icon, color: AppColors.primary, size: 22)
+                : Text(
+                    icon as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
             const SizedBox(height: 12),
             Text(label,
                 style: GoogleFonts.inter(

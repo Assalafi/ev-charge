@@ -13,6 +13,15 @@ class ApiService {
     };
   }
 
+  /// GET without auth headers (for public endpoints like version check)
+  static Future<Map<String, dynamic>> getPublic(String path) async {
+    final response = await http
+        .get(Uri.parse('${ApiConfig.baseUrl}$path'),
+            headers: {'Content-Type': 'application/json'})
+        .timeout(ApiConfig.timeout);
+    return _handleResponse(response);
+  }
+
   static Future<Map<String, dynamic>> get(String path) async {
     final headers = await _headers();
     final response = await http

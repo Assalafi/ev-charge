@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../services/update_service.dart';
 import 'auth/login_screen.dart';
 import 'main_screen.dart';
 
@@ -21,6 +25,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -36,8 +44,17 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
+
+    // Check for force update
+    final updateInfo = await UpdateService.checkForUpdate();
+    if (!mounted) return;
+
+    if (updateInfo != null && updateInfo['forceUpdate'] == true) {
+      _showForceUpdateDialog(updateInfo);
+      return;
+    }
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
@@ -49,9 +66,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
     
-    // Ensure we navigate to the correct screen based on auth state
     final isLoggedIn = auth.isLoggedIn;
-    print('Navigation: isLoggedIn = $isLoggedIn'); // Debug log
+
+    // Show optional update snackbar if available
+    if (updateInfo != null && updateInfo['forceUpdate'] == false) {
+      _pendingUpdateInfo = updateInfo;
+    }
     
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -60,6 +80,97 @@ class _SplashScreenState extends State<SplashScreen>
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
+  }
+
+  Map<String, dynamic>? _pendingUpdateInfo;
+
+  void _showForceUpdateDialog(Map<String, dynamic> info) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.system_update_rounded,
+                    size: 36,
+                    color: AppColors.accent,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Update Required',
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  info['message'] ?? 'A new version is available. Please update to continue using the app.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'v${info['currentVersion']} → v${info['latestVersion']}',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final url = info['storeUrl'] as String? ?? '';
+                      if (url.isNotEmpty) {
+                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Update Now',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -73,70 +184,34 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3DD68C), Color(0xFF2DB376)],
-          ),
-        ),
-        child: Center(
-          child: _AnimBuilder(
-            listenable: _controller,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _fadeAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.ev_station_rounded,
-                          size: 56,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'EV Charge',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Smart Charging, Simple Living',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.85),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: _AnimBuilder(
+          listenable: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeAnimation.value,
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 120,
+                      height: 120,
+                    ),
+                    const SizedBox(height: 24),
+                    Image.asset(
+                      'assets/images/brand-name.png',
+                      width: 220,
+                      fit: BoxFit.contain,
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

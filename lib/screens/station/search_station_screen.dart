@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../services/api_service.dart';
@@ -17,11 +19,12 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
   List<Map<String, dynamic>> _locations = [];
   bool _loading = true;
   Timer? _debounce;
+  Position? _userPosition;
 
   @override
   void initState() {
     super.initState();
-    _fetchLocations();
+    _initLocationThenFetch();
   }
 
   @override
@@ -29,6 +32,67 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
     _searchController.dispose();
     _debounce?.cancel();
     super.dispose();
+  }
+
+  Future<void> _initLocationThenFetch() async {
+    await _getUserLocation();
+    await _fetchLocations();
+  }
+
+  Future<void> _getUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
+      if (mounted) {
+        setState(() => _userPosition = position);
+      }
+    } catch (_) {}
+  }
+
+  /// Haversine formula — returns distance in km
+  double _calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371.0; // Earth radius in km
+    final dLat = _degToRad(lat2 - lat1);
+    final dLon = _degToRad(lon2 - lon1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degToRad(lat1)) * cos(_degToRad(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180);
+
+  String _formatDistance(double km) {
+    if (km < 1) {
+      return '${(km * 1000).round()} m';
+    } else if (km < 10) {
+      return '${km.toStringAsFixed(1)} km';
+    } else {
+      return '${km.round()} km';
+    }
+  }
+
+  double? _distanceForLocation(Map<String, dynamic> loc) {
+    if (_userPosition == null) return null;
+    final lat = loc['latitude'] is num ? (loc['latitude'] as num).toDouble() : null;
+    final lng = loc['longitude'] is num ? (loc['longitude'] as num).toDouble() : null;
+    if (lat == null || lng == null) return null;
+    return _calculateDistanceKm(
+      _userPosition!.latitude, _userPosition!.longitude, lat, lng,
+    );
   }
 
   Future<void> _fetchLocations([String? query]) async {
@@ -39,9 +103,23 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
           : '/locations';
       final response = await ApiService.get(path);
       if (response['success'] == true) {
+        final locations = (response['locations'] as List)
+            .cast<Map<String, dynamic>>();
+
+        // Sort by distance if user location is available
+        if (_userPosition != null) {
+          locations.sort((a, b) {
+            final distA = _distanceForLocation(a);
+            final distB = _distanceForLocation(b);
+            if (distA == null && distB == null) return 0;
+            if (distA == null) return 1;
+            if (distB == null) return -1;
+            return distA.compareTo(distB);
+          });
+        }
+
         setState(() {
-          _locations = (response['locations'] as List)
-              .cast<Map<String, dynamic>>();
+          _locations = locations;
         });
       }
     } catch (e) {
@@ -152,7 +230,6 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
     final ready = loc['readyStations'] ?? 0;
     final hasReady = ready > 0;
     final pricePerWh = loc['pricePerWh'] ?? 0.17;
-    final minimumCharge = loc['minimumCharge'] ?? 150;
     final pricePerKwh = pricePerWh * 1000;
     final latitude = loc['latitude'] is num ? (loc['latitude'] as num).toDouble() : null;
     final longitude = loc['longitude'] is num ? (loc['longitude'] as num).toDouble() : null;
@@ -264,26 +341,51 @@ class _SearchStationScreenState extends State<SearchStationScreen> {
                         color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'min ₦${minimumCharge.toStringAsFixed(0)}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    if (_distanceForLocation(loc) != null) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.near_me_rounded,
+                          size: 13, color: AppColors.accent),
+                      const SizedBox(width: 3),
+                      Text(
+                        _formatDistance(_distanceForLocation(loc)!),
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
           if (hasCoords)
-            IconButton(
-              icon: const Icon(Icons.near_me_rounded),
-              color: AppColors.primary,
-              onPressed: () => _openGoogleMaps(latitude, longitude, location),
-              tooltip: 'Navigate',
+            GestureDetector(
+              onTap: () => _openGoogleMaps(latitude, longitude, location),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.directions_rounded,
+                        size: 22, color: AppColors.accent),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Go',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),

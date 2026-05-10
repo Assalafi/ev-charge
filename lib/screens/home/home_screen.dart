@@ -383,8 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: _ActionCard(
                             icon: Icons.qr_code_scanner_rounded,
-                            title: 'Scan\nQR Code',
-                            subtitle: 'Quick start',
+                            title: 'Scan QR Code\non Available\nCharging Pile',
+                            subtitle: '',
                             gradient: const [
                               Color(0xFF3DD68C),
                               Color(0xFF2DB376)
@@ -403,8 +403,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: _ActionCard(
                             icon: Icons.location_on_rounded,
-                            title: 'Find\nLocation',
-                            subtitle: 'Station locations',
+                            title: 'Find Nearest\nCharging Pile',
+                            subtitle: '',
                             gradient: const [
                               Color(0xFF1B2150),
                               Color(0xFF121838)
@@ -534,8 +534,8 @@ class _ActionCard extends StatelessWidget {
                     title,
                     style: GoogleFonts.inter(
                       color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                       height: 1.2,
                     ),
                   ),

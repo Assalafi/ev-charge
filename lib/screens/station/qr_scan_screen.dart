@@ -94,7 +94,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
-                  'Point camera at station QR code',
+                  'Scan QR Code to Start Charging',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 14,

@@ -245,7 +245,6 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     final displayStatus = hasGunInserted && simpleStatus == 'Ready'
         ? 'Plug In'
         : simpleStatus;
-    final statusColor = _simpleStatusColor(displayStatus);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -402,32 +401,6 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Station Info
-          Text('Station Info',
-              style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.textDark : AppColors.text)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _infoCard('Status', displayStatus, _simpleStatusIcon(displayStatus),
-                  valueColor: statusColor),
-              const SizedBox(width: 12),
-              _infoCard(
-                  'Connectors', '${s['connectorCount'] ?? 1}', Icons.power),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _infoCard('Vendor', s['vendor'] ?? '-', Icons.business),
-              const SizedBox(width: 12),
-              _infoCard(
-                  'Model', s['model'] ?? '-', Icons.precision_manufacturing),
-            ],
-          ),
 
           // Pricing & Wallet Section
           const SizedBox(height: 24),

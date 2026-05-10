@@ -1,5 +1,5 @@
 name: ev_charge
-description: EV Charge - Smart EV Charging App
+description: EV Charge by African Motor Works - Smart EV Charging App
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -22,11 +22,28 @@ dependencies:
   flutter_paystack: ^1.0.7
   local_auth: ^2.1.6
   url_launcher: ^6.2.2
+  geolocator: ^10.1.0
+  package_info_plus: ^4.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#1B2150"
+    theme_color: "#1B2150"
+  image_path: "assets/images/icon.png"
+  adaptive_icon_background: "#1B2150"
+  adaptive_icon_foreground: "assets/images/icon.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
