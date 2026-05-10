@@ -69,9 +69,10 @@ class _SplashScreenState extends State<SplashScreen>
     final isLoggedIn = auth.isLoggedIn;
 
     // Show optional update snackbar if available
-    if (updateInfo != null && updateInfo['forceUpdate'] == false) {
-      _pendingUpdateInfo = updateInfo;
-    }
+    // TODO: Implement optional update notification
+    // if (updateInfo != null && updateInfo['forceUpdate'] == false) {
+    //   _pendingUpdateInfo = updateInfo;
+    // }
     
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -84,14 +85,13 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Map<String, dynamic>? _pendingUpdateInfo;
 
   void _showForceUpdateDialog(Map<String, dynamic> info) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
+      builder: (ctx) => WillPopScope(
+        onWillPop: () async => false,
         child: Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
