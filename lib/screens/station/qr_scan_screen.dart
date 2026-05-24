@@ -40,13 +40,31 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
     setState(() => _scanned = true);
 
+    // Extract station code from QR code
+    final stationCode = _extractStationCode(value);
+
     // Navigate to station detail
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => StationDetailScreen(chargePointId: value),
+        builder: (_) => StationDetailScreen(chargePointId: stationCode),
       ),
     );
+  }
+
+  String _extractStationCode(String qrValue) {
+    // If it's a URL with qcodeNum parameter, extract the number
+    if (qrValue.contains('qcodeNum=')) {
+      final uri = Uri.tryParse(qrValue);
+      if (uri != null) {
+        final code = uri.queryParameters['qcodeNum'];
+        if (code != null && code.isNotEmpty) {
+          return code;
+        }
+      }
+    }
+    // Otherwise return the value as-is (plain text QR code)
+    return qrValue;
   }
 
   @override
