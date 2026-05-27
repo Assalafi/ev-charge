@@ -53,8 +53,14 @@ class _QrScanScreenState extends State<QrScanScreen> {
   }
 
   String _extractStationCode(String qrValue) {
-    // If it's a URL with qcodeNum parameter, extract the number
-    if (qrValue.contains('qcodeNum=')) {
+    // Try regex first — most reliable for extracting qcodeNum from any URL format
+    final match = RegExp(r'qcodeNum=(\d+)').firstMatch(qrValue);
+    if (match != null) {
+      return match.group(1)!;
+    }
+
+    // Try Uri parsing as fallback
+    if (qrValue.startsWith('http')) {
       final uri = Uri.tryParse(qrValue);
       if (uri != null) {
         final code = uri.queryParameters['qcodeNum'];
@@ -63,6 +69,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
         }
       }
     }
+
     // Otherwise return the value as-is (plain text QR code)
     return qrValue;
   }

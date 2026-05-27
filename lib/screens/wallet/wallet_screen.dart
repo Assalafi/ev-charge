@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/paystack_web.dart' as paystack_web;
 import '../../utils/currency_formatter.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -41,7 +43,9 @@ class _WalletScreenState extends State<WalletScreen> {
         setState(() {
           _publicKey = response['publicKey'];
         });
-        plugin.initialize(publicKey: _publicKey);
+        if (!kIsWeb) {
+          plugin.initialize(publicKey: _publicKey);
+        }
       }
     } catch (e) {
       print('Error fetching Paystack config: $e');
@@ -171,31 +175,59 @@ class _WalletScreenState extends State<WalletScreen> {
       }
 
       if (response['success'] == true) {
-        // Launch Paystack payment using access_code from backend
-        final charge = Charge()
-          ..accessCode = response['access_code']
-          ..amount = (amount * 100).toInt() // Convert to kobo
-          ..email = auth.userEmail
-          ..reference = response['reference'];
-
-        final result = await plugin.checkout(
-          context,
-          charge: charge,
-        );
-
-        if (result.status == true) {
-          // Payment successful, verify and update balance
-          await _verifyPayment(response['reference']);
-          await _fetchTransactions(); // Refresh transaction history
+        if (kIsWeb) {
+          // Web: use Paystack JS popup
+          final ref = response['reference'] as String;
+          await paystack_web.openPaystackPopup(
+            publicKey: _publicKey,
+            email: auth.userEmail,
+            amountInKobo: (amount * 100).toInt(),
+            reference: ref,
+            accessCode: response['access_code'] ?? '',
+            onSuccess: (reference) async {
+              await _verifyPayment(reference);
+              await _fetchTransactions();
+            },
+            onClose: () {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Payment window closed'),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              setState(() => _funding = false);
+            },
+          );
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Payment cancelled or failed'),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+          // Mobile: use flutter_paystack plugin
+          final charge = Charge()
+            ..accessCode = response['access_code']
+            ..amount = (amount * 100).toInt() // Convert to kobo
+            ..email = auth.userEmail
+            ..reference = response['reference'];
+
+          final result = await plugin.checkout(
+            context,
+            charge: charge,
+          );
+
+          if (result.status == true) {
+            // Payment successful, verify and update balance
+            await _verifyPayment(response['reference']);
+            await _fetchTransactions(); // Refresh transaction history
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Payment cancelled or failed'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
         }
       } else {

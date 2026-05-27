@@ -22,12 +22,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Map<String, dynamic>? _activeSession;
+  List<Map<String, dynamic>> _activeSessions = [];
   // ignore: unused_field
   bool _checkingSession = false;
   double _walletBalance = 0.0;
   Timer? _refreshTimer;
-  int _batteryPercentage = 0;
+  Map<String, int> _batteryPercentages = {};
 
   @override
   void initState() {
@@ -46,19 +46,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void _startPeriodicRefresh() {
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchWalletBalance();
-      if (_activeSession != null) {
-        _fetchBatteryPercentage();
+      if (_activeSessions.isNotEmpty) {
+        for (final session in _activeSessions) {
+          _fetchBatteryPercentage(session['chargePointId']);
+        }
       }
     });
   }
 
-  Future<void> _fetchBatteryPercentage() async {
-    if (_activeSession == null) return;
+  Future<void> _fetchBatteryPercentage(String chargePointId) async {
     try {
-      final response = await ApiService.get('/charging/status/${_activeSession!['chargePointId']}');
+      final response = await ApiService.get('/charging/status/$chargePointId');
       if (response['success'] == true && response['session'] != null) {
         setState(() {
-          _batteryPercentage = response['session']['soc'] ?? 0;
+          _batteryPercentages[chargePointId] = response['session']['soc'] ?? 0;
         });
       }
     } catch (_) {
@@ -88,26 +89,24 @@ class _HomeScreenState extends State<HomeScreen> {
         final active = txList.cast<Map<String, dynamic>>().where(
             (t) => t['status'] == 'InProgress').toList();
         setState(() {
-          if (active.isNotEmpty) {
-            _activeSession = active.first;
-          } else {
-            _activeSession = null;
-            _batteryPercentage = 0;
+          _activeSessions = active;
+          if (active.isEmpty) {
+            _batteryPercentages.clear();
           }
         });
-        if (_activeSession != null) {
-          await _fetchBatteryPercentage();
+        for (final session in _activeSessions) {
+          await _fetchBatteryPercentage(session['chargePointId']);
         }
       } else {
         setState(() {
-          _activeSession = null;
-          _batteryPercentage = 0;
+          _activeSessions = [];
+          _batteryPercentages.clear();
         });
       }
     } catch (_) {
       setState(() {
-        _activeSession = null;
-        _batteryPercentage = 0;
+        _activeSessions = [];
+        _batteryPercentages.clear();
       });
     }
     setState(() => _checkingSession = false);
@@ -218,15 +217,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 28),
 
-                  // Active Session Banner
-                  if (_activeSession != null)
-                    GestureDetector(
+                  // Active Session Banners
+                  ..._activeSessions.map((session) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ChargingSessionScreen(
-                              chargePointId: _activeSession!['chargePointId'],
+                              chargePointId: session['chargePointId'],
                             ),
                           ),
                         ).then((_) => _checkActiveSession());
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       )),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Station: ${_activeSession!['chargePointId']}',
+                                    'Station: ${session['chargePointId']}',
                                     style: TextStyle(
                                         color: Colors.white.withOpacity(0.9),
                                         fontSize: 13),
@@ -283,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           color: Colors.white, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '$_batteryPercentage%',
+                                        '${_batteryPercentages[session['chargePointId']] ?? 0}%',
                                         style: TextStyle(
                                             color: Colors.white.withOpacity(0.9),
                                             fontSize: 13,
@@ -300,8 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                  )),
 
-                  if (_activeSession != null) const SizedBox(height: 24),
+                  if (_activeSessions.isNotEmpty) const SizedBox(height: 12),
 
                   // Wallet Balance Card
                   GestureDetector(
@@ -532,18 +533,16 @@ class _ActionCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Flexible(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        height: 1.1,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

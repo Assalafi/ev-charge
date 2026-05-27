@@ -55,12 +55,50 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
+        final message = e.toString();
+        if (message.contains('not authorized') || message.contains('not authorized for use')) {
+          _showNotAuthorizedDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          );
+        }
       }
     }
     setState(() => _loading = false);
+  }
+
+  void _showNotAuthorizedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.block_rounded, color: AppColors.error, size: 48),
+        title: Text(
+          'Station Not Authorized',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'This station is not authorized for use. Please contact support or try a different station.',
+          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Go Back', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _startCharging() async {
