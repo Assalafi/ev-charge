@@ -1,4 +1,4 @@
-import 'dart:js' as js;
+import 'dart:html' as html;
 
 typedef PaystackSuccessCallback = void Function(String reference);
 typedef PaystackCloseCallback = void Function();
@@ -11,24 +11,16 @@ Future<void> openPaystackPopup({
   required String accessCode,
   required PaystackSuccessCallback onSuccess,
   required PaystackCloseCallback onClose,
+  String? authorizationUrl,
 }) async {
-  final popup = js.context['PaystackPop'];
-  if (popup == null) {
-    throw Exception('PaystackPop not loaded. Ensure Paystack inline.js is in index.html');
+  // Redirect to Paystack authorization_url which enforces channels: ['card']
+  if (authorizationUrl != null && authorizationUrl.isNotEmpty) {
+    // Store reference for verification after redirect back
+    html.window.localStorage['paystack_reference'] = reference;
+    html.window.location.href = authorizationUrl;
+    return;
   }
 
-  final handler = popup.callMethod('setup', [
-    js.JsObject.jsify({
-      'key': publicKey,
-      'email': email,
-      'amount': amountInKobo,
-      'ref': reference,
-      'onClose': js.allowInterop(() => onClose()),
-      'callback': js.allowInterop((dynamic response) {
-        final ref = (response as js.JsObject)['reference'].toString();
-        onSuccess(ref);
-      }),
-    }),
-  ]);
-  handler.callMethod('openIframe', []);
+  // Fallback: shouldn't reach here if backend provides authorization_url
+  throw Exception('Authorization URL is required for web payments');
 }

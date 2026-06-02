@@ -176,14 +176,29 @@ class _WalletScreenState extends State<WalletScreen> {
 
       if (response['success'] == true) {
         if (kIsWeb) {
-          // Web: use Paystack JS popup
+          // Web: use Paystack authorization_url (has channel restrictions from backend)
           final ref = response['reference'] as String;
+          final authUrl = response['authorization_url'] as String?;
+          if (authUrl == null || authUrl.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Payment initialization failed'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            setState(() => _funding = false);
+            return;
+          }
           await paystack_web.openPaystackPopup(
             publicKey: _publicKey,
             email: auth.userEmail,
             amountInKobo: (amount * 100).toInt(),
             reference: ref,
             accessCode: response['access_code'] ?? '',
+            authorizationUrl: authUrl, // Use backend's restricted URL
             onSuccess: (reference) async {
               await _verifyPayment(reference);
               await _fetchTransactions();
@@ -365,7 +380,7 @@ class _WalletScreenState extends State<WalletScreen> {
               final amount = double.tryParse(controller.text);
               if (amount != null && amount > 0) {
                 Navigator.pop(context);
-                _addFunds(amount);
+                _showPasswordDialog(amount);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -387,6 +402,76 @@ class _WalletScreenState extends State<WalletScreen> {
                 : const Text('Pay'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPasswordDialog(double amount) {
+    final passwordController = TextEditingController();
+    bool obscure = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Security Check',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter your admin password to proceed',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: obscure,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () => setDialogState(() => obscure = !obscure),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (passwordController.text == '4422884228') {
+                  Navigator.pop(context);
+                  _addFunds(amount);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Incorrect password'),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
       ),
     );
   }

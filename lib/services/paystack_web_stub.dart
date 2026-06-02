@@ -10,6 +10,7 @@ Future<void> openPaystackPopup({
   required String accessCode,
   required PaystackSuccessCallback onSuccess,
   required PaystackCloseCallback onClose,
+  String? authorizationUrl,
 }) async {
   throw UnsupportedError('Paystack web popup is only supported on web');
 }

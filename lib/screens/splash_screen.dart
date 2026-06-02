@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../services/update_service.dart';
+import '../utils/web_utils.dart';
 import 'auth/login_screen.dart';
 import 'main_screen.dart';
 
@@ -145,9 +147,14 @@ class _SplashScreenState extends State<SplashScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
-                      final url = info['storeUrl'] as String? ?? '';
-                      if (url.isNotEmpty) {
-                        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      if (kIsWeb) {
+                        // For web: force hard reload to pick up new deployment
+                        WebUtils.forceReload();
+                      } else {
+                        final url = info['storeUrl'] as String? ?? '';
+                        if (url.isNotEmpty) {
+                          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
