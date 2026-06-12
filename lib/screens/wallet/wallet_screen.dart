@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_paystack/flutter_paystack.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -20,7 +20,6 @@ class _WalletScreenState extends State<WalletScreen> {
   double _balance = 0.0;
   bool _loading = true;
   bool _funding = false;
-  final plugin = PaystackPlugin();
   String _publicKey = '';
   List<Map<String, dynamic>> _transactions = [];
   bool _loadingTransactions = false;
@@ -43,9 +42,6 @@ class _WalletScreenState extends State<WalletScreen> {
         setState(() {
           _publicKey = response['publicKey'];
         });
-        if (!kIsWeb) {
-          plugin.initialize(publicKey: _publicKey);
-        }
       }
     } catch (e) {
       print('Error fetching Paystack config: $e');
@@ -175,30 +171,32 @@ class _WalletScreenState extends State<WalletScreen> {
       }
 
       if (response['success'] == true) {
-        if (kIsWeb) {
-          // Web: use Paystack authorization_url (has channel restrictions from backend)
-          final ref = response['reference'] as String;
-          final authUrl = response['authorization_url'] as String?;
-          if (authUrl == null || authUrl.isEmpty) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Payment initialization failed'),
-                  backgroundColor: AppColors.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-            setState(() => _funding = false);
-            return;
+        // Both Web and Mobile: use Paystack authorization_url (has channel restrictions from backend)
+        final ref = response['reference'] as String;
+        final authUrl = response['authorization_url'] as String?;
+        if (authUrl == null || authUrl.isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Payment initialization failed'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
+          setState(() => _funding = false);
+          return;
+        }
+
+        if (kIsWeb) {
+          // Web: use web popup implementation
           await paystack_web.openPaystackPopup(
             publicKey: _publicKey,
             email: auth.userEmail,
             amountInKobo: (amount * 100).toInt(),
             reference: ref,
             accessCode: response['access_code'] ?? '',
-            authorizationUrl: authUrl, // Use backend's restricted URL
+            authorizationUrl: authUrl,
             onSuccess: (reference) async {
               await _verifyPayment(reference);
               await _fetchTransactions();
@@ -217,27 +215,24 @@ class _WalletScreenState extends State<WalletScreen> {
             },
           );
         } else {
-          // Mobile: use flutter_paystack plugin
-          final charge = Charge()
-            ..accessCode = response['access_code']
-            ..amount = (amount * 100).toInt() // Convert to kobo
-            ..email = auth.userEmail
-            ..reference = response['reference'];
-
-          final result = await plugin.checkout(
+          // Mobile: use WebView for in-app payment
+          final result = await Navigator.push(
             context,
-            charge: charge,
+            MaterialPageRoute(
+              builder: (context) => PaystackWebView(
+                url: authUrl,
+                reference: ref,
+              ),
+            ),
           );
-
-          if (result.status == true) {
-            // Payment successful, verify and update balance
-            await _verifyPayment(response['reference']);
-            await _fetchTransactions(); // Refresh transaction history
-          } else {
+          if (result == 'success') {
+            await _verifyPayment(ref);
+            await _fetchTransactions();
+          } else if (result == 'cancelled') {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Payment cancelled or failed'),
+                  content: Text('Payment cancelled'),
                   backgroundColor: AppColors.error,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -380,7 +375,7 @@ class _WalletScreenState extends State<WalletScreen> {
               final amount = double.tryParse(controller.text);
               if (amount != null && amount > 0) {
                 Navigator.pop(context);
-                _showPasswordDialog(amount);
+                _addFunds(amount);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -402,76 +397,6 @@ class _WalletScreenState extends State<WalletScreen> {
                 : const Text('Pay'),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showPasswordDialog(double amount) {
-    final passwordController = TextEditingController();
-    bool obscure = true;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'Security Check',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Enter your admin password to proceed',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordController,
-                obscureText: obscure,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setDialogState(() => obscure = !obscure),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (passwordController.text == '4422884228') {
-                  Navigator.pop(context);
-                  _addFunds(amount);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Incorrect password'),
-                      backgroundColor: AppColors.error,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1101,6 +1026,70 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class PaystackWebView extends StatefulWidget {
+  final String url;
+  final String reference;
+
+  const PaystackWebView({
+    super.key,
+    required this.url,
+    required this.reference,
+  });
+
+  @override
+  State<PaystackWebView> createState() => _PaystackWebViewState();
+}
+
+class _PaystackWebViewState extends State<PaystackWebView> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) => setState(() => _isLoading = true),
+          onPageFinished: (_) => setState(() => _isLoading = false),
+          onNavigationRequest: (NavigationRequest request) {
+            // Check if navigation is to the callback URL (payment complete)
+            if (request.url.contains('evcharge.evworld.ng/#/wallet/verify')) {
+              // Payment completed, close WebView and return success
+              Navigator.pop(context, 'success');
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Payment'),
+        leading: IconButton(
+          icon: Icon(Icons.close),
+          onPressed: () => Navigator.pop(context, 'cancelled'),
+        ),
+      ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_isLoading)
+            Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+        ],
       ),
     );
   }
