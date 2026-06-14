@@ -85,10 +85,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       try {
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Verify your identity to enable biometric login',
-          options: const AuthenticationOptions(
-            stickyAuth: true,
-            biometricOnly: true,
-          ),
         );
         if (!authenticated) {
           if (mounted) {
@@ -535,7 +531,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primary,
+        activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+        thumbColor: WidgetStatePropertyAll(AppColors.primary),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
     );

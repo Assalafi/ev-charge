@@ -1,4 +1,4 @@
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 typedef PaystackSuccessCallback = void Function(String reference);
 typedef PaystackCloseCallback = void Function();
@@ -16,8 +16,8 @@ Future<void> openPaystackPopup({
   // Redirect to Paystack authorization_url which enforces channels: ['card']
   if (authorizationUrl != null && authorizationUrl.isNotEmpty) {
     // Store reference for verification after redirect back
-    html.window.localStorage['paystack_reference'] = reference;
-    html.window.location.href = authorizationUrl;
+    web.window.localStorage.setItem('paystack_reference', reference);
+    web.window.location.href = authorizationUrl;
     return;
   }
 

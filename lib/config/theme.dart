@@ -82,7 +82,7 @@ class AppTheme {
         labelStyle: GoogleFonts.inter(color: AppColors.textSecondary),
         hintStyle: GoogleFonts.inter(color: AppColors.textSecondary),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         color: Colors.white,
@@ -102,15 +102,15 @@ class AppTheme {
   }
 
   static ThemeData get dark {
+    final darkBase = ThemeData(brightness: Brightness.dark);
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.interTextTheme(darkBase.textTheme),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -153,7 +153,7 @@ class AppTheme {
         labelStyle: GoogleFonts.inter(color: AppColors.textSecondaryDark),
         hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryDark),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         color: AppColors.cardDark,
