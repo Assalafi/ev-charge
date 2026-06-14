@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../main_screen.dart';
@@ -22,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _loading = false;
+  bool _acceptedPrivacyPolicy = false;
 
   @override
   void dispose() {
@@ -35,6 +37,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_acceptedPrivacyPolicy) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please accept the Privacy Policy to continue'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
     setState(() => _loading = true);
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -187,7 +200,50 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _acceptedPrivacyPolicy,
+                      onChanged: (value) {
+                        setState(() => _acceptedPrivacyPolicy = value ?? false);
+                      },
+                      activeColor: AppColors.primary,
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final url = Uri.parse('https://evcharge.evworld.ng/privacy-policy.html');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        },
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'I agree to the ',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
                 ElevatedButton(
                   onPressed: _loading ? null : _signup,
