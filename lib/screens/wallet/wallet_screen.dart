@@ -44,7 +44,6 @@ class _WalletScreenState extends State<WalletScreen> {
         });
       }
     } catch (e) {
-      print('Error fetching Paystack config: $e');
     }
   }
 

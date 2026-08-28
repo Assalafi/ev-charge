@@ -52,7 +52,6 @@ class _SlidingAdsBoardState extends State<SlidingAdsBoard> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      print('Error fetching ads: $e');
     }
   }
 

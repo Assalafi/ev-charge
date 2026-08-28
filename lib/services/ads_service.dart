@@ -48,7 +48,6 @@ class AdsService {
       }
       return [];
     } catch (e) {
-      print('Error fetching ads: $e');
       return [];
     }
   }

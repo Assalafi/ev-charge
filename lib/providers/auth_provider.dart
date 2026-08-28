@@ -28,28 +28,23 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
-      print('Auth check: token = $token'); // Debug log
       
       if (token != null) {
         final response = await ApiService.get('/auth/me');
-        print('Auth check: /auth/me response = $response'); // Debug log
         
         if (response['success'] == true) {
           _user = response['user'] is Map<String, dynamic>
               ? response['user']
               : null;
           _isLoggedIn = _user != null;
-          print('Auth check: _isLoggedIn = $_isLoggedIn, _user = $_user'); // Debug log
         }
       }
     } catch (e) {
-      print('Auth check: error = $e'); // Debug log
       _isLoggedIn = false;
       _user = null;
     }
 
     _isLoading = false;
-    print('Auth check: completed, _isLoggedIn = $_isLoggedIn'); // Debug log
     notifyListeners();
   }
 
